@@ -27,8 +27,8 @@ export function signup(name, email, password) {
   });
 }
 
-export function login(email, password) {
-  const data = send("/api/auth/login", {
+export async function login(email, password) {//make it async, we need to wait before save
+  const data = await send("/api/auth/login", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ email, password }),

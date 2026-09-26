@@ -29,7 +29,7 @@ export default function App() {
   }, []);
 
   async function handleSignup(event) {
-    event.preventDefault();
+    event.preventDefault();//prevent the default behavior of the form so that the page does not refresh when the form is submitted
     setMessage("");
 
     try {
@@ -48,7 +48,6 @@ export default function App() {
 
     try {
       const data = await login(email, password);
-      console.log(data);
       const me = await getMe();
       setUser(me.user);
       setScreen("home");
