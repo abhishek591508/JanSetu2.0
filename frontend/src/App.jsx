@@ -1,122 +1,127 @@
-import { useState } from 'react'
-import heroImg from './assets/hero.png'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import './App.css'
+import { useEffect, useState } from "react";
+import { getMe, login, logout, signup } from "./api";
+import "./App.css";
 
-function App() {
-  const [count, setCount] = useState(0)
+export default function App() {
+  const [screen, setScreen] = useState("login");
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [message, setMessage] = useState("");
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      return;
+    }
+
+    getMe()
+      .then((data) => {
+        setUser(data.user);
+        setScreen("home");
+      })
+      .catch(() => {
+        logout();
+        setUser(null);
+        setScreen("login");
+      });
+  }, []);
+
+  async function handleSignup(event) {
+    event.preventDefault();
+    setMessage("");
+
+    try {
+      await signup(name, email, password);
+      setMessage("Account created. Log in.");
+      setScreen("login");
+      setPassword("");
+    } catch (error) {
+      setMessage(error.message);
+    }
+  }
+
+  async function handleLogin(event) {
+    event.preventDefault();
+    setMessage("");
+
+    try {
+      const data = await login(email, password);
+      console.log(data);
+      const me = await getMe();
+      setUser(me.user);
+      setScreen("home");
+    } catch (error) {
+      console.log("Problem while login at frontend")
+      setMessage(error.message);
+    }
+  }
+
+  function handleLogout() {
+    logout();
+    setUser(null);
+    setScreen("login");
+    setMessage("");
+  }
+
+  if (screen === "home" && user) {
+    return (
+      <main className="page">
+        <h1>JanSetu</h1>
+        <p>You are logged in.</p>
+        <p>Name: {user.name}</p>
+        <p>Email: {user.email}</p>
+        <p>Role: {user.role}</p>
+        <p>Civic score: {user.civicScore}</p>
+        <button onClick={handleLogout}>Log out</button>
+      </main>
+    );
+  }
 
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.jsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
+    <main className="page">
+      <h1>JanSetu</h1>
+      <p>{screen === "login" ? "Log in" : "Create an account"}</p>
+
+      <form onSubmit={screen === "login" ? handleLogin : handleSignup}>
+        {screen === "signup" && (
+          <input
+            placeholder="Name"
+            value={name}
+            onChange={(event) => setName(event.target.value)}
+          />
+        )}
+
+        <input
+          placeholder="Email"
+          value={email}
+          onChange={(event) => setEmail(event.target.value)}
+        />
+
+        <input
+          placeholder="Password"
+          type="password"
+          value={password}
+          onChange={(event) => setPassword(event.target.value)}
+        />
+
+        <button type="submit">
+          {screen === "login" ? "Log in" : "Sign up"}
         </button>
-      </section>
+      </form>
 
-      <div className="ticks"></div>
+      {message && <p className="message">{message}</p>}
 
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
-
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
-  )
+      {screen === "login" ? (
+        <button className="link" onClick={() => setScreen("signup")}>
+          Need an account? Sign up
+        </button>
+      ) : (
+        <button className="link" onClick={() => setScreen("login")}>
+          Already have an account? Log in
+        </button>
+      )}
+    </main>
+  );
 }
-
-export default App

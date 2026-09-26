@@ -140,4 +140,15 @@ const authorityOnly = async (req, res) => {
   });
 };
 
-module.exports = {signup, login, tryController, authorityOnly};
+const getMe = async (req, res) => {
+  return res.status(200).json({
+    success: true,
+    message: "You are allowed to see your data",
+    user: {
+      id: req.user._id,
+      name: req.user.name,
+      role: req.user.role,
+    },
+  });
+};
+module.exports = {signup, login, tryController, authorityOnly, getMe};

@@ -19,15 +19,23 @@ export function signup(name, email, password) {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ name, email, password }),
+    //stringify means sending {
+    //                          name: name, 
+    //                          email: email, 
+    //                          password: password
+    //                        }
   });
 }
 
 export function login(email, password) {
-  return send("/api/auth/login", {
+  const data = send("/api/auth/login", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ email, password }),
   });
+
+  localStorage.setItem("token", data.token);
+  return data;
 }
 
 export function getMe() {
