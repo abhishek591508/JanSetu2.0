@@ -147,7 +147,9 @@ const getMe = async (req, res) => {
     user: {
       id: req.user._id,
       name: req.user.name,
+      email: req.user.email,
       role: req.user.role,
+      civicScore: req.user.civicScore,
     },
   });
 };
