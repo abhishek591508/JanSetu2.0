@@ -121,4 +121,11 @@ const login = async (req, res) => {
   }
 };
 
-module.exports = {signup, login};
+const tryController = async (req,res)=>{
+  return res.json({
+    Success: true,
+    message: `tryController is accessible successfully after passing protect middleware in routes`
+  })
+}
+
+module.exports = {signup, login, tryController};
