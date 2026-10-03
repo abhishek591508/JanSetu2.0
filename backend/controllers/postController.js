@@ -32,6 +32,8 @@ function validateCreatePost(body) {
 }
 
 const createPost = async (req, res) => {
+  let uploadedPublicId = "";
+
   try {
     const checked = validateCreatePost(req.body);
 
@@ -43,11 +45,21 @@ const createPost = async (req, res) => {
       });
     }
 
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        message: "Image is required",
+      });
+    }
+
+    const uploaded = await uploadPostImage(req.file.buffer);
+    uploadedPublicId = uploaded.publicId;
+
     const post = await Post.create({
       description: checked.description,
       category: checked.category,
       department: CATEGORY_DEPARTMENT[checked.category],
-      imageUrl: "",
+      imageUrl: uploaded.url,
       location: {
         type: "Point",
         coordinates: [checked.longitude, checked.latitude],
@@ -59,13 +71,17 @@ const createPost = async (req, res) => {
       upvoteCount: 0,
     });
 
-    await post.populate("createdBy", "name role civicScore");//populate is used to populate the createdBy field with the name, role and civicScore fields and return with res
+    await post.populate("createdBy", "name role civicScore");
 
     return res.status(201).json({
       success: true,
       post,
     });
   } catch (error) {
+    if (uploadedPublicId) {
+      await cloudinary.uploader.destroy(uploadedPublicId);
+    }
+
     console.log(error);
     return res.status(500).json({
       success: false,
