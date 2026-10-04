@@ -1,9 +1,7 @@
 const Post = require("../models/Post");
-const {
-  CATEGORIES,
-  CATEGORY_DEPARTMENT,
-  RADIUS_TIERS_KM,
-} = require("../constants/posts");
+const {CATEGORIES, CATEGORY_DEPARTMENT, RADIUS_TIERS_KM} = require("../constants/posts");
+const {cloudinary, uploadPostImage} = require("../config/cloudinary")
+
 
 function validateCreatePost(body) {
   const errors = [];
@@ -31,7 +29,7 @@ function validateCreatePost(body) {
   return { errors, description, category, latitude, longitude };
 }
 
-const createPost = async (req, res) => {
+const   createPost = async (req, res) => {
   let uploadedPublicId = "";
 
   try {
@@ -53,7 +51,7 @@ const createPost = async (req, res) => {
     }
 
     const uploaded = await uploadPostImage(req.file.buffer);
-    uploadedPublicId = uploaded.publicId;
+    uploadedPublicId = uploaded.publicId;// there are 2 things, {1: resule.secureUrl and 2: result.publicID}, public id used to manage stored image
 
     const post = await Post.create({
       description: checked.description,
@@ -78,7 +76,7 @@ const createPost = async (req, res) => {
       post,
     });
   } catch (error) {
-    if (uploadedPublicId) {
+    if (uploadedPublicId) {//uploadedPulicId is used to manage the image : like jansetu/image/abc.jpg
       await cloudinary.uploader.destroy(uploadedPublicId);
     }
 

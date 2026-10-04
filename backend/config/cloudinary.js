@@ -6,10 +6,15 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
+//THIS FUNCTION UPLOADS THE IMAGE TO CLOUDINARY WITH THE FOLDER NAME "jansetu/posts" AND RESOURCE TYPE "IMAGE"
 function uploadPostImage(buffer) {
-  return new Promise((resolve, reject) => {
-    const stream = cloudinary.uploader.upload_stream(
-      { folder: "jansetu/posts", resource_type: "image" },
+  return new Promise((resolve, reject) => {//this is callBack, not a promise, so we convert it to promise first.
+
+    const stream = cloudinary.uploader.upload_stream(//stream is used to upload the image to cloudinary, as we are not first saving it as a file in the server
+      { 
+        folder: "jansetu/posts", 
+        resource_type: "image" 
+      },
       (error, result) => {
         if (error || !result) {
           reject(error || new Error("Image upload failed"));
@@ -23,7 +28,7 @@ function uploadPostImage(buffer) {
       }
     );
 
-    stream.end(buffer);
+    stream.end(buffer);//
   });
 }
 
