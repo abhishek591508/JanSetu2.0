@@ -34,6 +34,7 @@ const   createPost = async (req, res) => {
 
   try {
     const checked = validateCreatePost(req.body);
+    console.log("Reached 1");
 
     if (checked.errors.length > 0) {
       return res.status(400).json({
@@ -49,9 +50,11 @@ const   createPost = async (req, res) => {
         message: "Image is required",
       });
     }
+    console.log("Reached 2");
 
     const uploaded = await uploadPostImage(req.file.buffer);
     uploadedPublicId = uploaded.publicId;// there are 2 things, {1: resule.secureUrl and 2: result.publicID}, public id used to manage stored image
+    console.log("Reached 3");
 
     const post = await Post.create({
       description: checked.description,
@@ -68,6 +71,7 @@ const   createPost = async (req, res) => {
       escalationLevel: "local",
       upvoteCount: 0,
     });
+    console.log("Reached 4");
 
     await post.populate("createdBy", "name role civicScore");
 

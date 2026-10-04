@@ -1,11 +1,13 @@
 const express = require("express");
 const dotenv = require("dotenv");
+dotenv.config();//config it here because {const postRoutes = require("./routes/postRoutes")}need it
+
 const connectDB = require("./config/db");
 const authRoutes = require("./routes/authRoutes")
 const cors = require("cors")
 const postRoutes = require("./routes/postRoutes")
 
-dotenv.config();
+
 connectDB();
 
 const app = express();
