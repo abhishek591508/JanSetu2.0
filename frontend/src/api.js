@@ -7,8 +7,9 @@ async function send(path, options) {
   const response = await fetch(API + path, options);
   const data = await response.json();
 
-  if (!response.ok) {
-    throw new Error(data.message || "Request failed");
+  if (!response.ok) {//response.ok is false for 400, 401, and 500,
+    const details = Array.isArray(data.errors) ? data.errors.join(", ") : "";
+    throw new Error(details || data.message || "Request failed");
   }
 
   return data;
@@ -38,12 +39,33 @@ export async function login(email, password) {//make it async, we need to wait b
   return data;
 }
 
+
 export function getMe() {
   const token = localStorage.getItem("token");
 
   return send("/api/auth/me", {
     method: "GET",
     headers: { Authorization: "Bearer " + token },
+  });
+}
+
+//create post
+export function createPost({ description, category, latitude, longitude, image }) {
+  const token = localStorage.getItem("token");
+  const formData = new FormData();
+
+  formData.append("description", description);
+  formData.append("category", category);
+  formData.append("latitude", String(latitude));
+  formData.append("longitude", String(longitude));
+  formData.append("image", image);
+
+  return send("/api/posts", {
+    method: "POST",
+    headers: {
+      Authorization: "Bearer " + token,
+    },
+    body: formData,
   });
 }
 
