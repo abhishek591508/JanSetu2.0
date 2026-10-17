@@ -16,7 +16,7 @@ const PORT = process.env.PORT || 5000;
 app.use(cors());//keep it before routes, because express reads middleware top to bottom
 app.use(express.json());
 app.use("/api/auth", authRoutes);
-app.use("/api/post", postRoutes);
+app.use("/api/posts", postRoutes);
 
 app.get("/", (req, res) => {
   res.status(200).json({
