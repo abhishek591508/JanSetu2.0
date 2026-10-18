@@ -5,7 +5,34 @@ A hyperlocal bridge between civilians and government authorities. A person repor
 
 # Basic Flow
 
-![Flow Of Project](<Screenshot 2026-09-25 215015.png>)
+```mermaid
+flowchart TD
+    start["Open the site"] --> hasToken{"Token saved in the browser?"}
+    hasToken -->|No| loginPage["/login or /signup"]
+    loginPage --> signup["POST /api/auth/signup creates a civilian"]
+    signup --> login["POST /api/auth/login"]
+    login --> saveToken["Save JWT in localStorage"]
+    hasToken -->|Yes| me["GET /api/auth/me"]
+    saveToken --> home["Home /"]
+    me --> home
+    home --> gps["Browser reads current GPS"]
+    gps --> nearby["GET /api/posts/nearby"]
+    nearby --> list["Posts within 5 km, nearest first, up to 100"]
+    list --> upvote["Click upvote: POST /api/posts/:id/upvote"]
+    upvote --> once{"Already voted or resolved?"}
+    once -->|No| count["Add user id and increase upvoteCount by 1"]
+    once -->|Yes| reject["409 already voted, or 400 if resolved"]
+    home --> report["/report"]
+    report --> place["GPS fills latitude and longitude"]
+    place --> pick["Category is selected"]
+    pick --> similar["GET /api/posts/similar"]
+    similar --> three["Same category, within 100 m, not resolved, max 3"]
+    three --> openPost["Click a row"]
+    openPost --> one["/posts/:id then GET /api/posts/:id"]
+    report --> submit["Submit the form"]
+    submit --> upload["Multer reads the image, Cloudinary stores it"]
+    upload --> save["POST /api/posts saves an open post at radius 1 km"]
+```
 
 ## Stack
 ```
