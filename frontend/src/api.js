@@ -49,7 +49,7 @@ export function getMe() {
   });
 }
 
-//create post
+//create post api
 export function createPost({ description, category, latitude, longitude, image }) {
   const token = localStorage.getItem("token");
   const formData = new FormData();
@@ -69,7 +69,7 @@ export function createPost({ description, category, latitude, longitude, image }
   });
 }
 
-//local api in frontend for getting nearby Posts
+//Nearby feed api in frontend for getting nearby Posts
 export function getNearbyPosts(latitude, longitude) {
   const token = localStorage.getItem("token");
 
@@ -90,4 +90,19 @@ export function getNearbyPosts(latitude, longitude) {
 
 export function logout() {
   localStorage.removeItem("token");
+}
+
+//upvoting by users - api
+export function upvotePost(postId) {
+  const token = localStorage.getItem("token");
+
+  return send(
+    `/api/posts/${encodeURIComponent(postId)}/upvote`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: "Bearer " + token,
+      },
+    }
+  );
 }

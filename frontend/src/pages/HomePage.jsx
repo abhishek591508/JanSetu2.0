@@ -3,7 +3,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import { useAuth } from "../auth/AuthContext";
-import { getNearbyPosts } from "../api";
+import { getNearbyPosts, upvotePost } from "../api";
 
 export default function HomePage() {
   const { user } = useAuth();
@@ -11,6 +11,7 @@ export default function HomePage() {
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [votingIds, setVotingIds] = useState(new Set());//This state tracks which post is currently being voted on, so one pending request doesn't disable every Upvote button.
 
   const loadNearby = useCallback(() => {
     setLoading(true);
@@ -54,11 +55,47 @@ export default function HomePage() {
         maximumAge: 60000,
       }
     );
+
+
   }, []);
 
   useEffect(() => {
     loadNearby();
   }, [loadNearby]);
+
+
+  
+//upvote handler in homepage
+  async function handleUpvote(postId) {
+    try {
+      // Prevent accidental repeated clicks while this request is running.
+      setVotingIds((prev) => new Set([...prev, postId]));
+
+      const result = await upvotePost(postId);
+
+      // Update only the post that was successfully upvoted.
+      setPosts((prev) =>
+        prev.map((post) =>
+          post._id === postId
+            ? {
+                ...post,
+                upvoteCount: result.upvoteCount,
+                hasUpvoted: result.hasUpvoted,
+              }
+            : post
+        )
+      );
+    } catch (err) {
+      setError(err.message || "Could not upvote this issue.");
+    } finally {
+      setVotingIds((prev) => {
+        const next = new Set(prev);
+        next.delete(postId);
+        return next;
+      });
+    }
+  }
+
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100">
@@ -181,14 +218,34 @@ export default function HomePage() {
                   <p className="mt-4 whitespace-pre-wrap leading-7 text-slate-100">
                     {post.description}
                   </p>
-
-                  <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2 text-sm text-slate-400">
-                    <span>
+                  
+                  {/*postDistance, postUpvoteCount */}
+                  <div className="mt-4 flex flex-wrap items-center gap-3">
+                    <span className="text-sm text-slate-400">
                       📍 {(post.distanceMeters / 1000).toFixed(2)} km away
                     </span>
 
-                    <span>👍 {post.upvoteCount ?? 0} upvotes</span>
-                  </div>
+                    <button
+                      type="button"
+                      onClick={() => handleUpvote(post._id)}
+                      disabled={
+                        post.hasUpvoted ||
+                        post.status === "resolved" ||
+                        votingIds.has(post._id)
+                      }
+                      className={`rounded-lg px-4 py-2 text-sm font-medium transition ${
+                        post.hasUpvoted
+                          ? "bg-sky-950 text-sky-300 cursor-not-allowed"
+                          : "bg-slate-800 text-slate-100 hover:bg-slate-700 disabled:opacity-50"
+                      }`}
+                    >
+                      {votingIds.has(post._id)
+                        ? "Submitting..."
+                        : post.hasUpvoted
+                          ? `✓ Upvoted (${post.upvoteCount})`
+                          : `👍 Upvote (${post.upvoteCount ?? 0})`}
+                    </button>
+                  </div>                  
 
                   <div className="mt-4 border-t border-slate-800 pt-4 text-xs text-slate-500">
                     <p>
@@ -204,6 +261,8 @@ export default function HomePage() {
             ))}
           </div>
         )}
+
+
       </main>
     </div>
   );
