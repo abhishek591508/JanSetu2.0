@@ -106,3 +106,33 @@ export function upvotePost(postId) {
     }
   );
 }
+
+
+
+export function getPost(postId) {
+  const token = localStorage.getItem("token");
+
+  return send(`/api/posts/${encodeURIComponent(postId)}`, {
+    method: "GET",
+    headers: {
+      Authorization: "Bearer " + token,
+    },
+  });
+}
+
+export function getSimilarPosts(latitude, longitude, category) {
+  const token = localStorage.getItem("token");
+
+  const params = new URLSearchParams({
+    latitude: String(latitude),
+    longitude: String(longitude),
+    category,
+  });
+
+  return send(`/api/posts/similar?${params.toString()}`, {
+    method: "GET",
+    headers: {
+      Authorization: "Bearer " + token,
+    },
+  });
+}

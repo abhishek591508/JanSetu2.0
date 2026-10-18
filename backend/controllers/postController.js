@@ -236,4 +236,101 @@ const upvotePost = async (req, res) => {
   }
 };
 
-module.exports = { createPost, getNearbyPosts, upvotePost };
+
+//get similar post nearBy
+const getSimilarPosts = async (req, res) => {
+  try {
+    const latitude = Number(req.query.latitude);
+    const longitude = Number(req.query.longitude);
+    const category = req.query.category;
+
+    if (
+      req.query.latitude === undefined ||
+      req.query.longitude === undefined ||
+      !Number.isFinite(latitude) ||
+      !Number.isFinite(longitude) ||
+      latitude < -90 || latitude > 90 ||
+      longitude < -180 || longitude > 180 ||
+      !CATEGORIES.includes(category)
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "Valid coordinates and category are required",
+      });
+    }
+
+    const posts = await Post.aggregate([
+      {
+        $geoNear: {
+          near: {
+            type: "Point",
+            coordinates: [longitude, latitude],
+          },
+          key: "location",
+          distanceField: "distanceMeters",
+          maxDistance: 100, // 100 metres
+          spherical: true,
+          query: {
+            category,
+            status: { $ne: "resolved" },
+          },
+        },
+      },
+      { $limit: 3 },
+    ]);
+
+    await Post.populate(posts, {
+      path: "createdBy",
+      select: "name",
+    });
+
+    return res.status(200).json({
+      success: true,
+      count: posts.length,
+      posts,
+    });
+  } catch (error) {
+    console.error("Similar posts error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Could not find similar issues",
+    });
+  }
+};
+
+
+const getPost = async (req, res) => {
+  try {
+    const postId = req.params.postId;
+
+    if (!mongoose.isValidObjectId(postId)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid post ID",
+      });
+    }
+
+    const post = await Post.findById(postId).populate("createdBy", "name role civicScore");
+
+    if (!post) {
+      return res.status(404).json({
+        success: false,
+        message: "Post not found",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      post,
+    });
+  } catch (error) {
+    console.error("Get post error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Could not fetch post",
+    });
+  }
+};
+
+module.exports = { createPost, getNearbyPosts, upvotePost, getSimilarPosts, getPost };

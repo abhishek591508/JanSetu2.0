@@ -3,6 +3,7 @@ import GuestRoute from "./components/GuestRoute";
 import ProtectedRoute from "./components/ProtectedRoute";
 import CreatePostPage from "./pages/CreatePostPage";
 import HomePage from "./pages/HomePage";
+import PostPage from "./pages/PostPage";
 import LoginPage from "./pages/LoginPage";
 import SignupPage from "./pages/SignupPage";
 
@@ -38,6 +39,14 @@ export default function App() {
         element={
           <ProtectedRoute>
             <CreatePostPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/posts/:postId"
+        element={
+          <ProtectedRoute>
+            <PostPage />
           </ProtectedRoute>
         }
       />

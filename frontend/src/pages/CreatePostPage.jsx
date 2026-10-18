@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import { CATEGORIES } from "../constants/posts";
-import { createPost } from "../api";
+import { createPost, getSimilarPosts  } from "../api";
 
 export default function CreatePostPage() {
   const [description, setDescription] = useState("");
@@ -15,10 +16,39 @@ export default function CreatePostPage() {
   const [message, setMessage] = useState("");
   const [created, setCreated] = useState(null);
   const [submitting, setSubmitting] = useState(false);
+  const [similarPosts, setSimilarPosts] = useState([]);
+  const [similarMessage, setSimilarMessage] = useState("");
 
   useEffect(() => {
     detectLocation();
   }, []);
+
+  useEffect(() => {
+    if (latitude === "" || longitude === "" || !category) {
+      setSimilarPosts([]);
+      return;
+    }
+
+    let ignore = false;
+
+    getSimilarPosts(latitude, longitude, category)
+      .then((data) => {
+        if (!ignore) {
+          setSimilarPosts(data.posts || []);
+          setSimilarMessage("");
+        }
+      })
+      .catch((error) => {
+        if (!ignore) {
+          setSimilarPosts([]);
+          setSimilarMessage(error.message);
+        }
+      });
+
+    return () => {
+      ignore = true;
+    };
+  }, [latitude, longitude, category]);
 
   useEffect(() => {
     if (!image) {
@@ -132,6 +162,26 @@ export default function CreatePostPage() {
               ))}
             </select>
           </label>
+
+          <section className="rounded border border-slate-800 p-3 text-sm">
+            <p className="font-medium">Same category within 100 m</p>
+            {similarMessage && <p className="mt-2 text-red-400">{similarMessage}</p>}
+            {similarPosts.length === 0 && !similarMessage && (
+              <p className="mt-2 text-slate-400">No similar issues nearby.</p>
+            )}
+            <ul className="mt-2 flex flex-col gap-2">
+              {similarPosts.map((post) => (
+                <li key={post._id} className="rounded border border-slate-800 p-2">
+                  <Link to={`/posts/${post._id}`} className="block">
+                    <p>{post.description}</p>
+                    <p className="text-slate-400">
+                      {Math.round(post.distanceMeters)} m away · {post.status}
+                    </p>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </section>
 
           <label className="flex flex-col gap-1 text-sm">
             Photo

@@ -1,5 +1,5 @@
 const express = require("express");
-const { createPost,  getNearbyPosts, upvotePost} = require("../controllers/postController");
+const { createPost, getNearbyPosts, upvotePost, getSimilarPosts, getPost } = require("../controllers/postController");
 const { protect, allowRoles } = require("../middleware/authMiddleware");
 const { readPostImage } = require("../middleware/upload");
 
@@ -21,6 +21,22 @@ router.get(
   protect,
   allowRoles("civilian"),
   getNearbyPosts
+);
+
+// GET /api/posts/similar?latitude=&longitude=&category=
+router.get(
+  "/similar",
+  protect,
+  allowRoles("civilian"),
+  getSimilarPosts
+);
+
+// GET /api/posts/:postId
+router.get(
+  "/:postId",
+  protect,
+  allowRoles("civilian"),
+  getPost
 );
 
 // POST /api/posts/:postId/upvote
