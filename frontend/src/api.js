@@ -69,6 +69,25 @@ export function createPost({ description, category, latitude, longitude, image }
   });
 }
 
+//local api in frontend for getting nearby Posts
+export function getNearbyPosts(latitude, longitude) {
+  const token = localStorage.getItem("token");
+
+  const params = new URLSearchParams({
+    latitude: String(latitude),
+    longitude: String(longitude)
+    // longitude: "26.7740",
+    // latitude: "83.0646"
+  });
+
+  return send(`/api/posts/nearby?${params.toString()}`, {
+    method: "GET",
+    headers: {
+      Authorization: "Bearer " + token,
+    },
+  });
+}
+
 export function logout() {
   localStorage.removeItem("token");
 }

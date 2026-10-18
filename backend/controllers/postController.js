@@ -3,6 +3,7 @@ const {CATEGORIES, CATEGORY_DEPARTMENT, RADIUS_TIERS_KM} = require("../constants
 const {cloudinary, uploadPostImage} = require("../config/cloudinary")
 
 
+//a reusable function to check if the postData is correct or not
 function validateCreatePost(body) {
   const errors = [];
   const description = typeof body.description === "string" ? body.description.trim() : "";
@@ -29,7 +30,8 @@ function validateCreatePost(body) {
   return { errors, description, category, latitude, longitude };
 }
 
-const   createPost = async (req, res) => {
+//Controller 1 for creating a post
+const createPost = async (req, res) => {
   let uploadedPublicId = "";
 
   try {
@@ -92,4 +94,68 @@ const   createPost = async (req, res) => {
   }
 };
 
-module.exports = { createPost };
+//controller 2 to find the nearby feed using mongoDB's geospatial feature, [post is indexed 2d sphere, search enabled]
+const getNearbyPosts = async (req, res) => {
+  try {
+    const latitude = Number(req.query.latitude);
+    const longitude = Number(req.query.longitude);
+
+    // Validate the user's coordinates
+    if (
+      req.query.latitude === undefined ||
+      req.query.longitude === undefined ||
+      !Number.isFinite(latitude) ||
+      !Number.isFinite(longitude) ||
+      latitude < -90 ||
+      latitude > 90 ||
+      longitude < -180 ||
+      longitude > 180
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "Valid latitude and longitude are required",
+      });
+    }
+
+    // Find posts within 5 km, nearest first
+    const posts = await Post.aggregate([//.aggregate() lets you perform multiple data-processing operations through a pipeline.
+      {
+        $geoNear: {
+          near: {
+            type: "Point",
+            coordinates: [longitude, latitude],
+          },
+          key: "location",
+          distanceField: "distanceMeters",
+          maxDistance: 5000,
+          spherical: true,
+        },
+      },
+      {
+        $limit: 100,
+      },
+    ]);
+
+    // Populate the creator details after aggregation
+    await Post.populate(posts, {
+      path: "createdBy",
+      select: "name role civicScore",
+    });
+
+    return res.status(200).json({
+      success: true,
+      count: posts.length,
+      radiusKm: 5,
+      posts,
+    });
+  } catch (error) {
+    console.error("Get nearby posts error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Could not fetch nearby posts",
+    });
+  }
+};
+
+module.exports = { createPost, getNearbyPosts };
