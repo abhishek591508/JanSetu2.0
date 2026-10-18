@@ -2,6 +2,7 @@ const User = require("../models/User");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 
+//controller for signup
 const signup = async (req, res) => {
   try {
     const name = req.body.name;
@@ -62,6 +63,7 @@ const signup = async (req, res) => {
   }
 };
 
+//controller for login feature
 const login = async (req, res) => {
   try {
     const email = req.body.email;
@@ -140,6 +142,7 @@ const authorityOnly = async (req, res) => {
   });
 };
 
+//controller to get user ownself information
 const getMe = async (req, res) => {
   return res.status(200).json({
     success: true,

@@ -1,5 +1,5 @@
 const express = require("express");
-const { createPost,  getNearbyPosts} = require("../controllers/postController");
+const { createPost,  getNearbyPosts, upvotePost} = require("../controllers/postController");
 const { protect, allowRoles } = require("../middleware/authMiddleware");
 const { readPostImage } = require("../middleware/upload");
 
@@ -21,6 +21,14 @@ router.get(
   protect,
   allowRoles("civilian"),
   getNearbyPosts
+);
+
+// POST /api/posts/:postId/upvote
+router.post(
+  "/:postId/upvote",
+  protect,
+  allowRoles("civilian"),
+  upvotePost
 );
 
 module.exports = router;

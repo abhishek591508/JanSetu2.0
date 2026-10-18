@@ -83,6 +83,16 @@ const postSchema = new mongoose.Schema(
       type: Date,
       default: null,
     },
+    //upvoted by users
+    upvotedBy: {
+      type: [
+        {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "User",
+        },
+      ],
+      default: [],//a new post start with empty array
+    },
   },
   { timestamps: true }
 );

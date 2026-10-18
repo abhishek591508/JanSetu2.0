@@ -1,6 +1,7 @@
 const Post = require("../models/Post");
 const {CATEGORIES, CATEGORY_DEPARTMENT, RADIUS_TIERS_KM} = require("../constants/posts");
 const {cloudinary, uploadPostImage} = require("../config/cloudinary")
+const mongoose = require("mongoose");
 
 
 //a reusable function to check if the postData is correct or not
@@ -158,4 +159,81 @@ const getNearbyPosts = async (req, res) => {
   }
 };
 
-module.exports = { createPost, getNearbyPosts };
+
+//controller for upvote by users
+
+// POST /api/posts/:postId/upvote
+const upvotePost = async (req, res) => {
+  try {
+    const { postId } = req.params;
+
+    // console.log("Reached upvoteController 1")
+    if (!mongoose.isValidObjectId(postId)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid post ID",
+      });
+    }
+    // console.log("Reached upvoteController 2")
+    // One atomic update: add this user and increment once.
+    // A resolved post cannot receive new votes.
+    const post = await Post.findOneAndUpdate(
+      {
+        _id: postId,
+        status: { $ne: "resolved" },
+        upvotedBy: { $ne: req.user._id },
+      },
+      {
+        $addToSet: { upvotedBy: req.user._id },
+        $inc: { upvoteCount: 1 },
+      },
+      {
+        new: true,
+        runValidators: true,
+      }
+    ).select("_id upvoteCount status");
+
+    if (post) {
+      return res.status(200).json({
+        success: true,
+        message: "Issue upvoted successfully",
+        upvoteCount: post.upvoteCount,
+        hasUpvoted: true,
+      });
+    }
+
+    // Determine why the atomic update did not match.
+    const existingPost = await Post.findById(postId)
+      .select("status upvoteCount upvotedBy");
+
+    if (!existingPost) {
+      return res.status(404).json({
+        success: false,
+        message: "Post not found",
+      });
+    }
+
+    if (existingPost.status === "resolved") {
+      return res.status(400).json({
+        success: false,
+        message: "Resolved issues cannot be upvoted",
+      });
+    }
+
+    return res.status(409).json({
+      success: false,
+      message: "You have already upvoted this issue",
+      upvoteCount: existingPost.upvoteCount,
+      hasUpvoted: true,
+    });
+  } catch (error) {
+    console.error("Upvote post error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Could not upvote this issue",
+    });
+  }
+};
+
+module.exports = { createPost, getNearbyPosts, upvotePost };
