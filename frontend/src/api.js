@@ -1,7 +1,7 @@
 //This file is the only place that knows the backend address. 
 //The screen asks this file to sign up, log in, or load the profile. 
 //The screen does not build URLs itself.
-const API = "http://localhost:5000";
+const API = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
 async function send(path, options) {
   const response = await fetch(API + path, options);
@@ -50,15 +50,16 @@ export function getMe() {
 }
 
 //create post api
-export function createPost({ description, category, latitude, longitude, image }) {
+export function createPost({ description, category, latitude, longitude, image, images }) {
   const token = localStorage.getItem("token");
   const formData = new FormData();
+  const files = images && images.length ? images : image ? [image] : [];
 
   formData.append("description", description);
   formData.append("category", category);
   formData.append("latitude", String(latitude));
   formData.append("longitude", String(longitude));
-  formData.append("image", image);
+  files.forEach((file) => formData.append("image", file));
 
   return send("/api/posts", {
     method: "POST",

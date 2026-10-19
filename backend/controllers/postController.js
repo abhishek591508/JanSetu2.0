@@ -1,5 +1,5 @@
 const Post = require("../models/Post");
-const {CATEGORIES, CATEGORY_DEPARTMENT, RADIUS_TIERS_KM} = require("../constants/posts");
+const {CATEGORIES, CATEGORY_DEPARTMENT, RADIUS_TIERS_KM, visibilityForUpvotes} = require("../constants/posts");
 const {cloudinary, uploadPostImage} = require("../config/cloudinary")
 const mongoose = require("mongoose");
 
@@ -33,7 +33,7 @@ function validateCreatePost(body) {
 
 //Controller 1 for creating a post
 const createPost = async (req, res) => {
-  let uploadedPublicId = "";
+  const uploadedImages = [];
 
   try {
     const checked = validateCreatePost(req.body);
@@ -47,7 +47,9 @@ const createPost = async (req, res) => {
       });
     }
 
-    if (!req.file) {
+    const files = req.files || [];
+
+    if (files.length === 0) {
       return res.status(400).json({
         success: false,
         message: "Image is required",
@@ -55,15 +57,20 @@ const createPost = async (req, res) => {
     }
     console.log("Reached 2");
 
-    const uploaded = await uploadPostImage(req.file.buffer);
-    uploadedPublicId = uploaded.publicId;// there are 2 things, {1: resule.secureUrl and 2: result.publicID}, public id used to manage stored image
+    for (const file of files) {
+      const uploaded = await uploadPostImage(file.buffer);
+      uploadedImages.push(uploaded);
+    }
     console.log("Reached 3");
+
+    const imageUrls = uploadedImages.map((item) => item.url);
 
     const post = await Post.create({
       description: checked.description,
       category: checked.category,
       department: CATEGORY_DEPARTMENT[checked.category],
-      imageUrl: uploaded.url,
+      imageUrl: imageUrls[0],
+      imageUrls,
       location: {
         type: "Point",
         coordinates: [checked.longitude, checked.latitude],
@@ -83,8 +90,8 @@ const createPost = async (req, res) => {
       post,
     });
   } catch (error) {
-    if (uploadedPublicId) {//uploadedPulicId is used to manage the image : like jansetu/image/abc.jpg
-      await cloudinary.uploader.destroy(uploadedPublicId);
+    for (const item of uploadedImages) {
+      await cloudinary.uploader.destroy(item.publicId);
     }
 
     console.log(error);
@@ -118,8 +125,11 @@ const getNearbyPosts = async (req, res) => {
       });
     }
 
-    // Find posts within 5 km, nearest first
-    const posts = await Post.aggregate([//.aggregate() lets you perform multiple data-processing operations through a pipeline.
+    const since = new Date(Date.now() - 24 * 60 * 60 * 1000);
+
+    // The index finds posts inside the widest tier. Each post is then kept
+    // only if the person is inside that post's own radius.
+    const posts = await Post.aggregate([
       {
         $geoNear: {
           near: {
@@ -128,13 +138,43 @@ const getNearbyPosts = async (req, res) => {
           },
           key: "location",
           distanceField: "distanceMeters",
-          maxDistance: 5000,
+          maxDistance: RADIUS_TIERS_KM[3] * 1000,
           spherical: true,
         },
       },
       {
-        $limit: 100,
+        $match: {
+          $expr: {
+            $lte: ["$distanceMeters", { $multiply: ["$radiusKm", 1000] }],
+          },
+        },
       },
+      {
+        $addFields: {
+          upvoteVelocity: {
+            $size: {
+              $filter: {
+                input: { $ifNull: ["$recentUpvoteTimes", []] },
+                as: "votedAt",
+                cond: { $gte: ["$$votedAt", since] },
+              },
+            },
+          },
+        },
+      },
+      {
+        $addFields: {
+          rankScore: {
+            $add: [
+              { $multiply: [{ $ifNull: ["$upvoteCount", 0] }, 2] },
+              { $multiply: ["$upvoteVelocity", 3] },
+              { $divide: [1000, { $add: ["$distanceMeters", 100] }] },
+            ],
+          },
+        },
+      },
+      { $sort: { rankScore: -1 } },
+      { $limit: 100 },
     ]);
 
     // Populate the creator details after aggregation
@@ -146,7 +186,6 @@ const getNearbyPosts = async (req, res) => {
     return res.status(200).json({
       success: true,
       count: posts.length,
-      radiusKm: 5,
       posts,
     });
   } catch (error) {
@@ -194,11 +233,37 @@ const upvotePost = async (req, res) => {
     ).select("_id upvoteCount status");
 
     if (post) {
+      const visibility = visibilityForUpvotes(post.upvoteCount);
+      const dayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+
+      await Post.updateOne(
+        { _id: post._id },
+        {
+          $set: {
+            radiusKm: visibility.radiusKm,
+            escalationLevel: visibility.escalationLevel,
+          },
+          $push: {
+            recentUpvoteTimes: {
+              $each: [new Date()],
+              $slice: -50,
+            },
+          },
+        }
+      );
+
+      await Post.updateOne(
+        { _id: post._id },
+        { $pull: { recentUpvoteTimes: { $lt: dayAgo } } }
+      );
+
       return res.status(200).json({
         success: true,
         message: "Issue upvoted successfully",
         upvoteCount: post.upvoteCount,
         hasUpvoted: true,
+        radiusKm: visibility.radiusKm,
+        escalationLevel: visibility.escalationLevel,
       });
     }
 

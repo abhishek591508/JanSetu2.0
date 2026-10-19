@@ -7,8 +7,8 @@ import { createPost, getSimilarPosts  } from "../api";
 export default function CreatePostPage() {
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState("roads");
-  const [image, setImage] = useState(null);
-  const [previewUrl, setPreviewUrl] = useState("");
+  const [images, setImages] = useState([]);
+  const [previewUrls, setPreviewUrls] = useState([]);
   const [latitude, setLatitude] = useState("");
   const [longitude, setLongitude] = useState("");
   const [locating, setLocating] = useState(false);
@@ -51,16 +51,11 @@ export default function CreatePostPage() {
   }, [latitude, longitude, category]);
 
   useEffect(() => {
-    if (!image) {
-      setPreviewUrl("");
-      return;
-    }
+    const urls = images.map((file) => URL.createObjectURL(file));
+    setPreviewUrls(urls);
 
-    const url = URL.createObjectURL(image);
-    setPreviewUrl(url);
-
-    return () => URL.revokeObjectURL(url);
-  }, [image]);
+    return () => urls.forEach((url) => URL.revokeObjectURL(url));
+  }, [images]);
 
   function detectLocation() {
     if (!navigator.geolocation) {
@@ -86,8 +81,8 @@ export default function CreatePostPage() {
   }
 
   function onImageChange(event) {
-    const file = event.target.files?.[0] || null;
-    setImage(file);
+    const files = Array.from(event.target.files || []).slice(0, 5);
+    setImages(files);
   }
 
   async function onSubmit(event) {
@@ -95,8 +90,8 @@ export default function CreatePostPage() {
     setMessage("");
     setCreated(null);
 
-    if (!image) {
-      setMessage("Choose a photo of the problem.");
+    if (images.length === 0) {
+      setMessage("Choose at least one photo. You can attach up to 5.");
       return;
     }
 
@@ -113,11 +108,11 @@ export default function CreatePostPage() {
         category,
         latitude,
         longitude,
-        image,
+        images,
       });
       setCreated(data.post);
       setDescription("");
-      setImage(null);
+      setImages([]);
     } catch (error) {
       setMessage(error.message);
     } finally {
@@ -184,12 +179,16 @@ export default function CreatePostPage() {
           </section>
 
           <label className="flex flex-col gap-1 text-sm">
-            Photo
-            <input type="file" accept="image/jpeg,image/png,image/webp" onChange={onImageChange} />
+            Photos, up to 5
+            <input type="file" accept="image/jpeg,image/png,image/webp" multiple onChange={onImageChange} />
           </label>
 
-          {previewUrl && (
-            <img src={previewUrl} alt="Selected report" className="max-h-64 rounded object-cover" />
+          {previewUrls.length > 0 && (
+            <div className="flex flex-wrap gap-2">
+              {previewUrls.map((url) => (
+                <img key={url} src={url} alt="Selected report" className="h-24 rounded object-cover" />
+              ))}
+            </div>
           )}
 
           <div className="rounded border border-slate-800 p-3 text-sm">
@@ -237,9 +236,9 @@ export default function CreatePostPage() {
             <p className="text-sm text-slate-400">
               {created.category} · {created.department} · {created.radiusKm} km · {created.status}
             </p>
-            {created.imageUrl && (
-              <img src={created.imageUrl} alt="Uploaded report" className="mt-3 max-h-64 rounded" />
-            )}
+            {(created.imageUrls?.length ? created.imageUrls : created.imageUrl ? [created.imageUrl] : []).map((url) => (
+              <img key={url} src={url} alt="Uploaded report" className="mt-3 max-h-64 rounded" />
+            ))}
           </section>
         )}
       </main>

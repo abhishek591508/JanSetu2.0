@@ -44,14 +44,14 @@ export default function PostPage() {
           <article className="mt-4">
             <h1 className="text-2xl font-semibold">{post.description}</h1>
             <p className="mt-2 text-sm text-slate-400">
-              {post.category} · {post.department} · {post.status} · {post.upvoteCount} upvotes
+              {post.category} · {post.department} · {post.status} · {post.upvoteCount} upvotes · {post.radiusKm} km · {post.escalationLevel}
             </p>
             {post.createdBy?.name && (
               <p className="mt-1 text-sm text-slate-400">Reported by {post.createdBy.name}</p>
             )}
-            {post.imageUrl && (
-              <img src={post.imageUrl} alt="Reported issue" className="mt-4 max-h-96 rounded" />
-            )}
+            {(post.imageUrls?.length ? post.imageUrls : post.imageUrl ? [post.imageUrl] : []).map((url) => (
+              <img key={url} src={url} alt="Reported issue" className="mt-4 max-h-96 rounded" />
+            ))}
           </article>
         )}
       </main>

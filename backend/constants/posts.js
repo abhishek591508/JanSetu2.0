@@ -15,6 +15,22 @@ const AUTHORITY_LEVELS = ["local", "district", "higher"];
 const RADIUS_TIERS_KM = [1, 5, 10, 20];
 const UPVOTE_THRESHOLDS = [10, 25, 40];
 
+function visibilityForUpvotes(upvoteCount) {
+  if (upvoteCount >= UPVOTE_THRESHOLDS[2]) {
+    return { radiusKm: RADIUS_TIERS_KM[3], escalationLevel: "higher" };
+  }
+
+  if (upvoteCount >= UPVOTE_THRESHOLDS[1]) {
+    return { radiusKm: RADIUS_TIERS_KM[2], escalationLevel: "higher" };
+  }
+
+  if (upvoteCount >= UPVOTE_THRESHOLDS[0]) {
+    return { radiusKm: RADIUS_TIERS_KM[1], escalationLevel: "district" };
+  }
+
+  return { radiusKm: RADIUS_TIERS_KM[0], escalationLevel: "local" };
+}
+
 module.exports = {
   CATEGORIES,
   CATEGORY_DEPARTMENT,
@@ -22,4 +38,5 @@ module.exports = {
   AUTHORITY_LEVELS,
   RADIUS_TIERS_KM,
   UPVOTE_THRESHOLDS,
+  visibilityForUpvotes,
 };

@@ -44,6 +44,14 @@ const postSchema = new mongoose.Schema(
       type: String,
       default: "",
     },
+    imageUrls: {
+      type: [String],
+      default: [],
+    },
+    recentUpvoteTimes: {
+      type: [Date],
+      default: [],
+    },
     location: {
       type: pointSchema,
       required: true,

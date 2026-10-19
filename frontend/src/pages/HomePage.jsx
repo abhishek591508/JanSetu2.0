@@ -81,6 +81,8 @@ export default function HomePage() {
                 ...post,
                 upvoteCount: result.upvoteCount,
                 hasUpvoted: result.hasUpvoted,
+                radiusKm: result.radiusKm,
+                escalationLevel: result.escalationLevel,
               }
             : post
         )
@@ -107,7 +109,7 @@ export default function HomePage() {
           <div>
             <h1 className="text-2xl font-semibold">Nearby Issues</h1>
             <p className="mt-2 text-sm text-slate-400">
-              Civic problems reported within 5 km of your location.
+              Issues are ranked by distance, upvotes, and how fast new votes arrive. You see an issue only inside its radius: 1, 5, 10, or 20 km.
             </p>
           </div>
 
@@ -166,7 +168,7 @@ export default function HomePage() {
           <div className="mt-8 rounded-xl border border-slate-800 p-6">
             <h2 className="font-semibold">No issues nearby yet</h2>
             <p className="mt-2 text-sm text-slate-400">
-              No reported issues were found within 5 km. You can be the first
+              No reported issues are inside their visibility radius from here. You can be the first
               to report a local problem.
             </p>
           </div>
@@ -222,7 +224,8 @@ export default function HomePage() {
                   {/*postDistance, postUpvoteCount */}
                   <div className="mt-4 flex flex-wrap items-center gap-3">
                     <span className="text-sm text-slate-400">
-                      📍 {(post.distanceMeters / 1000).toFixed(2)} km away
+                      {(post.distanceMeters / 1000).toFixed(2)} km away · {post.radiusKm} km radius · {post.escalationLevel}
+                      {post.upvoteVelocity ? ` · ${post.upvoteVelocity} votes in 24h` : ""}
                     </span>
 
                     <button

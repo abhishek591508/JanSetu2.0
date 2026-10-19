@@ -19,8 +19,8 @@ const upload = multer({
 
 // Rule: Use async only when you need to await a Promise
 
-function readPostImage(req, res, next) {//upload.single() is callback-based, not something you're awaiting, so not done: const readPost = async(req,res,next)=>{}
-  upload.single("image")(req, res, (error) => {//run the multer, read file from formdata whole name starts from "image"
+function readPostImage(req, res, next) {//upload.array() is callback-based, not something you're awaiting
+  upload.array("image", 5)(req, res, (error) => {//the field name stays "image"; up to 5 files
     if (!error) {
       next();
       return;
@@ -29,7 +29,14 @@ function readPostImage(req, res, next) {//upload.single() is callback-based, not
     if (error.code === "LIMIT_FILE_SIZE") {
       return res.status(400).json({
         success: false,
-        message: "Image must be under 5 MB",
+        message: "Each image must be under 5 MB",
+      });
+    }
+
+    if (error.code === "LIMIT_UNEXPECTED_FILE") {
+      return res.status(400).json({
+        success: false,
+        message: "You can attach up to 5 images",
       });
     }
 
